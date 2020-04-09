@@ -18,6 +18,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import feign.Logger.Level;
 import feign.Logger.NoOpLogger;
 import feign.ReflectiveFeign.ParseHandlersByName;
 import feign.Request.Options;
@@ -112,6 +114,8 @@ public abstract class Feign {
     private boolean decode404;
     private boolean closeAfterDecode = true;
     private ExceptionPropagationPolicy propagationPolicy = NONE;
+    private boolean forceDecoding = false;
+    private List<Capability> capabilities = new ArrayList<>();
 
     public Builder logLevel(Logger.Level logLevel) {
       this.logLevel = logLevel;
@@ -244,6 +248,19 @@ public abstract class Feign {
       return this;
     }
 
+    public Builder addCapability(Capability capability) {
+      this.capabilities.add(capability);
+      return this;
+    }
+
+    /**
+     * Internal - used to indicate that the decoder should be immediately called
+     */
+    Builder forceDecoding() {
+      this.forceDecoding = true;
+      return this;
+    }
+
     public <T> T target(Class<T> apiType, String url) {
       return target(new HardCodedTarget<T>(apiType, url));
     }
@@ -253,9 +270,23 @@ public abstract class Feign {
     }
 
     public Feign build() {
+      Client client = Capability.enrich(this.client, capabilities);
+      Retryer retryer = Capability.enrich(this.retryer, capabilities);
+      List<RequestInterceptor> requestInterceptors = this.requestInterceptors.stream()
+          .map(ri -> Capability.enrich(ri, capabilities))
+          .collect(Collectors.toList());
+      Logger logger = Capability.enrich(this.logger, capabilities);
+      Contract contract = Capability.enrich(this.contract, capabilities);
+      Options options = Capability.enrich(this.options, capabilities);
+      Encoder encoder = Capability.enrich(this.encoder, capabilities);
+      Decoder decoder = Capability.enrich(this.decoder, capabilities);
+      InvocationHandlerFactory invocationHandlerFactory =
+          Capability.enrich(this.invocationHandlerFactory, capabilities);
+      QueryMapEncoder queryMapEncoder = Capability.enrich(this.queryMapEncoder, capabilities);
+
       SynchronousMethodHandler.Factory synchronousMethodHandlerFactory =
           new SynchronousMethodHandler.Factory(client, retryer, requestInterceptors, logger,
-              logLevel, decode404, closeAfterDecode, propagationPolicy);
+              logLevel, decode404, closeAfterDecode, propagationPolicy, forceDecoding);
       ParseHandlersByName handlersByName =
           new ParseHandlersByName(contract, options, encoder, decoder, queryMapEncoder,
               errorDecoder, synchronousMethodHandlerFactory);
@@ -263,12 +294,12 @@ public abstract class Feign {
     }
   }
 
-  static class ResponseMappingDecoder implements Decoder {
+  public static class ResponseMappingDecoder implements Decoder {
 
     private final ResponseMapper mapper;
     private final Decoder delegate;
 
-    ResponseMappingDecoder(ResponseMapper mapper, Decoder decoder) {
+    public ResponseMappingDecoder(ResponseMapper mapper, Decoder decoder) {
       this.mapper = mapper;
       this.delegate = decoder;
     }

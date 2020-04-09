@@ -62,11 +62,40 @@ public interface Client {
     private final HostnameVerifier hostnameVerifier;
 
     /**
-     * Null parameters imply platform defaults.
+     * Disable the request body internal buffering for {@code HttpURLConnection}.
+     * 
+     * @see HttpURLConnection#setFixedLengthStreamingMode(int)
+     * @see HttpURLConnection#setFixedLengthStreamingMode(long)
+     * @see HttpURLConnection#setChunkedStreamingMode(int)
+     */
+    private final boolean disableRequestBuffering;
+
+    /**
+     * Create a new client, which disable request buffering by default.
+     * 
+     * @param sslContextFactory SSLSocketFactory for secure https URL connections.
+     * @param hostnameVerifier the host name verifier.
      */
     public Default(SSLSocketFactory sslContextFactory, HostnameVerifier hostnameVerifier) {
       this.sslContextFactory = sslContextFactory;
       this.hostnameVerifier = hostnameVerifier;
+      this.disableRequestBuffering = true;
+    }
+
+    /**
+     * Create a new client.
+     * 
+     * @param sslContextFactory SSLSocketFactory for secure https URL connections.
+     * @param hostnameVerifier the host name verifier.
+     * @param disableRequestBuffering Disable the request body internal buffering for
+     *        {@code HttpURLConnection}.
+     */
+    public Default(SSLSocketFactory sslContextFactory, HostnameVerifier hostnameVerifier,
+        boolean disableRequestBuffering) {
+      super();
+      this.sslContextFactory = sslContextFactory;
+      this.hostnameVerifier = hostnameVerifier;
+      this.disableRequestBuffering = disableRequestBuffering;
     }
 
     @Override
@@ -162,10 +191,12 @@ public interface Client {
       }
 
       if (request.body() != null) {
-        if (contentLength != null) {
-          connection.setFixedLengthStreamingMode(contentLength);
-        } else {
-          connection.setChunkedStreamingMode(8196);
+        if (disableRequestBuffering) {
+          if (contentLength != null) {
+            connection.setFixedLengthStreamingMode(contentLength);
+          } else {
+            connection.setChunkedStreamingMode(8196);
+          }
         }
         connection.setDoOutput(true);
         OutputStream out = connection.getOutputStream();
