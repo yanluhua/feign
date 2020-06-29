@@ -19,7 +19,7 @@
 
   <groupId>io.github.openfeign</groupId>
   <artifactId>parent</artifactId>
-  <version>11.0-SNAPSHOT</version>
+  <version>10.12-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Feign (Parent)</name>
@@ -44,6 +44,7 @@
     <module>spring4</module>
     <module>soap</module>
     <module>reactive</module>
+    <module>dropwizard-metrics4</module>
     <module>dropwizard-metrics5</module>
     <module>micrometer</module>
     <module>example-github</module>
@@ -70,8 +71,7 @@
 
     <main.basedir>${project.basedir}</main.basedir>
 
-    <okhttp3.client.version>3.14.6</okhttp3.client.version>
-    <okhttp3.mockwebserver.version>3.14.6</okhttp3.mockwebserver.version>
+    <okhttp3.version>4.6.0</okhttp3.version>
     <googlehttpclient.version>1.31.0</googlehttpclient.version>
     <gson.version>2.5</gson.version>
     <slf4j.version>1.7.13</slf4j.version>
@@ -98,6 +98,7 @@
     <maven-scm-plugin.version>1.11.2</maven-scm-plugin.version>
     <maven-versions-plugin.version>2.7</maven-versions-plugin.version>
     <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+    <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
   </properties>
   <url>https://github.com/openfeign/feign</url>
   <inceptionYear>2012</inceptionYear>
@@ -288,14 +289,10 @@
 
       <dependency>
         <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>okhttp</artifactId>
-        <version>${okhttp3.client.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>mockwebserver</artifactId>
-        <version>${okhttp3.mockwebserver.version}</version>
+        <artifactId>okhttp-bom</artifactId>
+        <version>${okhttp3.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>
@@ -633,6 +630,11 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
         <version>${maven-versions-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>${maven-deploy-plugin.version}</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
